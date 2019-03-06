@@ -9,6 +9,7 @@ import (
 
 type GoProxy struct {
 	*http.ServeMux
+	routes map[string]string
 }
 
 type ProxyConfig struct {
@@ -23,6 +24,7 @@ func NewGoProxy(configs ...*ProxyConfig) *GoProxy {
 		ServeMux: http.NewServeMux(),
 	}
 	for _, c := range configs {
+		g.routes[c.TargetUrl] = c.PathPrefix
 		g.Handle(c.PathPrefix, &httputil.ReverseProxy{
 			Director:       g.directorFunc(c),
 			ModifyResponse: g.responderFunc(),
@@ -63,5 +65,9 @@ func (g *GoProxy) responderFunc() func(response *http.Response) error {
 }
 
 func (g *GoProxy) ListenAndServe(addr string) error {
+	for target, prefix := range g.routes {
+		log.Printf("Registered Target: %s with Prefix: %s", target, prefix)
+	}
+	log.Printf("Starting GoProxy Server...\naddr: %s", addr)
 	return http.ListenAndServe(addr, g)
 }
