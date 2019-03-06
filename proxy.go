@@ -71,7 +71,7 @@ func (g *GoProxy) ListenAndServe(addr string) error {
 		for _, prefix := range prefixes {
 			fmt.Printf("%s <-------------> %s", target, prefix)
 		}
-		fmt.Println("<--------------------------------PROXIED-------------------------------->")
+		fmt.Println("\n<--------------------------------PROXIED-------------------------------->\n")
 	}
 	log.Printf("Starting GoProxy Server, Address: %s", addr)
 	return http.ListenAndServe(addr, g)
