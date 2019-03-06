@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"net/http/httputil"
+	"net/http/pprof"
 	"net/url"
 )
 
@@ -52,14 +53,16 @@ func NewGoProxy(configs ...*ProxyConfig) *GoProxy {
 func (g *GoProxy) directorFunc(config *ProxyConfig) func(req *http.Request) {
 	target, err := url.Parse(config.TargetUrl)
 	if err != nil {
-		log.Fatalln()
+		log.Fatalln(err.Error())
 	}
 	targetQuery := target.RawQuery
 	return func(req *http.Request) {
 		req.URL.Scheme = target.Scheme
 		req.URL.Host = target.Host
 		req.URL.Path = util.SingleJoiningSlash(target.Path, req.URL.Path)
-		req.SetBasicAuth(config.Username, config.Password)
+		if config.Username != "" && config.Password != "" {
+			req.SetBasicAuth(config.Username, config.Password)
+		}
 		if targetQuery == "" || req.URL.RawQuery == "" {
 			req.URL.RawQuery = targetQuery + req.URL.RawQuery
 		} else {
@@ -108,6 +111,15 @@ func (g *GoProxy) AsHandlerFunc() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		g.ServeHTTP(writer, request)
 	}
+}
+
+func (g *GoProxy) WithPprof() *GoProxy {
+	g.Handle("/debug/pprof/", http.HandlerFunc(pprof.Index))
+	g.Handle("/debug/pprof/cmdline", http.HandlerFunc(pprof.Cmdline))
+	g.Handle("/debug/pprof/profile", http.HandlerFunc(pprof.Profile))
+	g.Handle("/debug/pprof/symbol", http.HandlerFunc(pprof.Symbol))
+	g.Handle("/debug/pprof/trace", http.HandlerFunc(pprof.Trace))
+	return g
 }
 
 //ListenAndServe starts an http server on the given address with all of the registered reverse proxies
