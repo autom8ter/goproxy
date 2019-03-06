@@ -29,4 +29,3 @@ func toPrettyJson(obj interface{}) []byte {
 	output, _ := json.MarshalIndent(obj, "", "  ")
 	return output
 }
-
