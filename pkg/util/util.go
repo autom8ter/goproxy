@@ -1,10 +1,10 @@
-package goproxy
+package util
 
 import (
 	"strings"
 )
 
-func singleJoiningSlash(a, b string) string {
+func SingleJoiningSlash(a, b string) string {
 	aslash := strings.HasSuffix(a, "/")
 	bslash := strings.HasPrefix(b, "/")
 	switch {
