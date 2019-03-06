@@ -57,9 +57,7 @@ func (g *GoProxy) directorFunc(config *ProxyConfig) func(req *http.Request) {
 func (g *GoProxy) responderFunc() func(response *http.Response) error {
 	return func(response *http.Response) error {
 		response.Header = nil
-		response.Cookies() = nil
 		response.Request.Header = nil
-		response.Request.Cookies() = nil
 		return nil
 	}
 }
