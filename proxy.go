@@ -69,7 +69,7 @@ func (g *GoProxy) responderFunc() func(response *http.Response) error {
 func (g *GoProxy) ListenAndServe(addr string) error {
 	for target, prefixes := range g.routes {
 		for _, prefix := range prefixes {
-			fmt.Printf("%s <-------------> %s", target, prefix)
+			fmt.Printf("%s <-------------> %s\n", target, prefix)
 		}
 		fmt.Println("\n<--------------------------------PROXIED-------------------------------->\n")
 	}
