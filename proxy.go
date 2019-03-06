@@ -22,6 +22,7 @@ type ProxyConfig struct {
 func NewGoProxy(configs ...*ProxyConfig) *GoProxy {
 	g := &GoProxy{
 		ServeMux: http.NewServeMux(),
+		routes: make(map[string]string),
 	}
 	for _, c := range configs {
 		g.routes[c.TargetUrl] = c.PathPrefix
