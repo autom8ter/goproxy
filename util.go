@@ -1,4 +1,4 @@
-package proxy
+package goproxy
 
 import (
 	"encoding/json"
