@@ -1,5 +1,7 @@
 # GoProxy
 
+[GoDoc](https://github.com/autom8ter/goproxy/blob/master/GODOC.md)
+
 ## Overview
 GoProxy is a lightweight(zero third party libraries) reverse proxy server written in Golang
 
