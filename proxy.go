@@ -2,12 +2,12 @@ package goproxy
 
 import (
 	"fmt"
-	"github.com/autom8ter/goproxy/pkg/util"
 	"log"
 	"net/http"
 	"net/http/httputil"
 	"net/http/pprof"
 	"net/url"
+	"strings"
 )
 
 //GoProxy is an API Gateway/Reverse Proxy and http.ServeMux/http.Handler
@@ -31,6 +31,7 @@ type ProxyConfig struct {
 	TargetUrl  string
 	Username   string
 	Password   string
+	Headers    map[string]string
 }
 
 //NewGoProxy registers a new reverseproxy for each provided ProxyConfig
@@ -59,9 +60,14 @@ func (g *GoProxy) directorFunc(config *ProxyConfig) func(req *http.Request) {
 	return func(req *http.Request) {
 		req.URL.Scheme = target.Scheme
 		req.URL.Host = target.Host
-		req.URL.Path = util.SingleJoiningSlash(target.Path, req.URL.Path)
+		req.URL.Path = singleJoiningSlash(target.Path, req.URL.Path)
 		if config.Username != "" && config.Password != "" {
 			req.SetBasicAuth(config.Username, config.Password)
+		}
+		if config.Headers != nil {
+			for k, v := range config.Headers {
+				req.Header.Set(k, v)
+			}
 		}
 		if targetQuery == "" || req.URL.RawQuery == "" {
 			req.URL.RawQuery = targetQuery + req.URL.RawQuery
@@ -130,4 +136,16 @@ func (g *GoProxy) ListenAndServe(addr string) error {
 	}
 	log.Printf("Starting GoProxy Server, Address: %s", addr)
 	return http.ListenAndServe(addr, g)
+}
+
+func singleJoiningSlash(a, b string) string {
+	aslash := strings.HasSuffix(a, "/")
+	bslash := strings.HasPrefix(b, "/")
+	switch {
+	case aslash && bslash:
+		return a + b[1:]
+	case !aslash && !bslash:
+		return a + "/" + b
+	}
+	return a + b
 }

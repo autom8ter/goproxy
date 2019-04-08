@@ -1,3 +1,0 @@
-package stripe
-
-//In Progress

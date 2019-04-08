@@ -22,17 +22,23 @@ var (
 	twilioTarget = "https://api.twilio.com/2010-04-01/Accounts/" + os.Getenv("TWILIO_ACCOUNT_SID")
 	Configs      = []*goproxy.ProxyConfig{
 		{
-			PathPrefix: "/Messages.json",
-			TargetUrl:  twilioTarget,
-			Username:   os.Getenv("TWILIO_API_KEY"),
-			Password:   os.Getenv("TWILIO_API_SECRET"),
-		},
-		{
-			PathPrefix: "/Calls.json",
-			TargetUrl:  twilioTarget,
-			Username:   os.Getenv("TWILIO_API_KEY"),
-			Password:   os.Getenv("TWILIO_API_SECRET"),
-		},
+        				PathPrefix: "/Messages.json",
+        				TargetUrl:  twilioTarget,
+        				Username:   os.Getenv("TWILIO_API_KEY"),
+        				Password:   os.Getenv("TWILIO_API_SECRET"),
+        				Headers: map[string]string{
+        					"Header_Key" : "Header Value",
+        				},
+        			},
+        			{
+        				PathPrefix: "/Calls.json",
+        				TargetUrl:  twilioTarget,
+        				Username:   os.Getenv("TWILIO_API_KEY"),
+        				Password:   os.Getenv("TWILIO_API_SECRET"),
+        				Headers: map[string]string{
+        					"Header_Key" : "Header Value",
+        				},
+        			},
 	}
 )
 
