@@ -1,48 +1,50 @@
 package goproxy
 
 import (
-	"fmt"
+	"github.com/autom8ter/goproxy/logging"
+	"github.com/autom8ter/goproxy/middleware"
+	"github.com/autom8ter/objectify"
+	"github.com/gorilla/mux"
 	"log"
 	"net/http"
 	"net/http/httputil"
-	"net/http/pprof"
 	"net/url"
-	"strings"
+	"time"
 )
+
+var util = objectify.New()
 
 //GoProxy is an API Gateway/Reverse Proxy and http.ServeMux/http.Handler
 type GoProxy struct {
-	*http.ServeMux
+	*mux.Router
 	proxies map[string]*httputil.ReverseProxy
 }
 
-//ResponseMiddleware is a function used to modify the response of a reverse proxy
-type ResponseMiddleware func(func(response *http.Response) error) func(response *http.Response) error
-
-//RequestMiddleware is a function used to modify the incoming request of a reverse proxy from a client
-type RequestMiddleware func(func(req *http.Request)) func(req *http.Request)
-
-//TransportMiddleware is a function used to modify the http RoundTripper that is used by a reverse proxy. The default RoundTripper is initially http.DefaultTransport
-type TransportMiddleware func(tripper http.RoundTripper) http.RoundTripper
-
-//ProxyConfig is used to configure GoProxies reverse proxies
-type ProxyConfig struct {
-	PathPrefix string
-	TargetUrl  string
+//Config is used to configure GoProxies reverse proxies
+type Config struct {
+	TargetUrl  string `validate:"required"`
 	Username   string
 	Password   string
 	Headers    map[string]string
+	FormValues map[string]string
 }
 
-//NewGoProxy registers a new reverseproxy for each provided ProxyConfig
-func NewGoProxy(configs ...*ProxyConfig) *GoProxy {
+//ProxyConfig is a map. The key should be a path prefix that will be handled by the router
+type ProxyConfig map[string]*Config
+
+//New registers a new reverseproxy for each provided ProxyConfig
+func New(config ProxyConfig) *GoProxy {
 	g := &GoProxy{
-		ServeMux: http.NewServeMux(),
-		proxies:  make(map[string]*httputil.ReverseProxy),
+		Router:  mux.NewRouter(),
+		proxies: make(map[string]*httputil.ReverseProxy),
 	}
-	for _, c := range configs {
-		g.proxies[c.PathPrefix] = &httputil.ReverseProxy{
-			Director: g.directorFunc(c),
+
+	for k, v := range config {
+		if err := util.Validate(v); err != nil {
+			util.Fatalln(err.Error())
+		}
+		g.proxies[k] = &httputil.ReverseProxy{
+			Director: g.directorFunc(v),
 		}
 	}
 	for path, prox := range g.proxies {
@@ -51,22 +53,49 @@ func NewGoProxy(configs ...*ProxyConfig) *GoProxy {
 	return g
 }
 
-func (g *GoProxy) directorFunc(config *ProxyConfig) func(req *http.Request) {
+//NewGoProxy registers a new reverseproxy for each provided ProxyConfig
+func NewFromConfig(config ProxyConfig) *GoProxy {
+	g := &GoProxy{
+		Router:  mux.NewRouter(),
+		proxies: make(map[string]*httputil.ReverseProxy),
+	}
+
+	for k, v := range config {
+		if err := util.Validate(v); err != nil {
+			util.Fatalln(err.Error())
+		}
+		g.proxies[k] = &httputil.ReverseProxy{
+			Director: g.directorFunc(v),
+		}
+	}
+	for path, prox := range g.proxies {
+		g.Handle(path, prox)
+	}
+	return g
+}
+
+func (g *GoProxy) directorFunc(config *Config) func(req *http.Request) {
 	target, err := url.Parse(config.TargetUrl)
 	if err != nil {
 		log.Fatalln(err.Error())
 	}
 	targetQuery := target.RawQuery
 	return func(req *http.Request) {
+		start := time.Now()
 		req.URL.Scheme = target.Scheme
 		req.URL.Host = target.Host
-		req.URL.Path = singleJoiningSlash(target.Path, req.URL.Path)
+		req.URL.Path = util.SingleJoiningSlash(target.Path, req.URL.Path)
 		if config.Username != "" && config.Password != "" {
 			req.SetBasicAuth(config.Username, config.Password)
 		}
 		if config.Headers != nil {
 			for k, v := range config.Headers {
 				req.Header.Set(k, v)
+			}
+		}
+		if config.FormValues != nil {
+			for k, v := range config.FormValues {
+				req.Form.Set(k, v)
 			}
 		}
 		if targetQuery == "" || req.URL.RawQuery == "" {
@@ -78,28 +107,54 @@ func (g *GoProxy) directorFunc(config *ProxyConfig) func(req *http.Request) {
 			// explicitly disable User-Agent so it's not set to default value
 			req.Header.Set("User-Agent", "")
 		}
+
+		util.Debugf("proxied request: %s\n", util.MarshalJSON(&logging.Request{
+			Received:  start,
+			Method:    req.Method,
+			URL:       req.URL.String(),
+			UserAgent: req.UserAgent(),
+			Referer:   req.Referer(),
+			Proto:     req.Proto,
+			RemoteIP:  req.RemoteAddr,
+			Latency:   time.Since(start),
+		}))
 	}
 }
 
 //ModifyResponses takes a Response Middleware function, traverses each registered reverse proxy, and modifies the http response it sends to the client
-func (g *GoProxy) ModifyResponses(middleware ResponseMiddleware) {
+func (g *GoProxy) ModifyResponses(middleware middleware.ResponseWare) {
 	for _, prox := range g.proxies {
 		prox.ModifyResponse = middleware(prox.ModifyResponse)
 	}
 }
 
 //ModifyResponses takes a Request Middleware function, traverses each registered reverse proxy, and modifies the http request it sends to its target prior to sending
-func (g *GoProxy) ModifyRequests(middleware RequestMiddleware) {
+func (g *GoProxy) ModifyRequests(middleware middleware.RequestWare) {
 	for _, prox := range g.proxies {
 		prox.Director = middleware(prox.Director)
 	}
 }
 
 //ModifyResponses takes a Transport Middleware function, traverses each registered reverse proxy, and modifies the http roundtripper it uses
-func (g *GoProxy) ModifyTransport(middleware TransportMiddleware) {
+func (g *GoProxy) ModifyTransport(middleware middleware.TransportWare) {
 	for _, prox := range g.proxies {
 		prox.Transport = middleware(prox.Transport)
 	}
+}
+
+//ModifyRouter takes a router middleware function and wraps the proxies router
+func (g *GoProxy) ModifyRouter(middleware middleware.RouterWare) {
+	g.Router = middleware(g.Router)
+}
+
+//WalkPaths walks registered mux paths and modifies them
+func (g *GoProxy) WalkPaths(fns ...mux.WalkFunc) error {
+	for _, v := range fns {
+		if err := g.Router.Walk(v); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 //Proxies returns all registered reverse proxies as a map of prefix:reverse proxy
@@ -117,35 +172,4 @@ func (g *GoProxy) AsHandlerFunc() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		g.ServeHTTP(writer, request)
 	}
-}
-
-func (g *GoProxy) WithPprof() *GoProxy {
-	g.Handle("/debug/pprof/", http.HandlerFunc(pprof.Index))
-	g.Handle("/debug/pprof/cmdline", http.HandlerFunc(pprof.Cmdline))
-	g.Handle("/debug/pprof/profile", http.HandlerFunc(pprof.Profile))
-	g.Handle("/debug/pprof/symbol", http.HandlerFunc(pprof.Symbol))
-	g.Handle("/debug/pprof/trace", http.HandlerFunc(pprof.Trace))
-	return g
-}
-
-//ListenAndServe starts an http server on the given address with all of the registered reverse proxies
-func (g *GoProxy) ListenAndServe(addr string) error {
-	for prefix, _ := range g.proxies {
-		fmt.Println("<--------------------------------PROXIED-------------------------------->")
-		fmt.Printf("Prefix-------------> %s\n", prefix)
-	}
-	log.Printf("Starting GoProxy Server, Address: %s", addr)
-	return http.ListenAndServe(addr, g)
-}
-
-func singleJoiningSlash(a, b string) string {
-	aslash := strings.HasSuffix(a, "/")
-	bslash := strings.HasPrefix(b, "/")
-	switch {
-	case aslash && bslash:
-		return a + b[1:]
-	case !aslash && !bslash:
-		return a + "/" + b
-	}
-	return a + b
 }

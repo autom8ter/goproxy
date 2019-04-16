@@ -5,20 +5,41 @@
 
 ## Usage
 
+#### type Config
+
+```go
+type Config struct {
+	TargetUrl  string `validate:"required"`
+	Username   string
+	Password   string
+	Headers    map[string]string
+	FormValues map[string]string
+}
+```
+
+Config is used to configure GoProxies reverse proxies
+
 #### type GoProxy
 
 ```go
 type GoProxy struct {
-	*http.ServeMux
+	*mux.Router
 }
 ```
 
 GoProxy is an API Gateway/Reverse Proxy and http.ServeMux/http.Handler
 
-#### func  NewGoProxy
+#### func  New
 
 ```go
-func NewGoProxy(configs ...*ProxyConfig) *GoProxy
+func New(config ProxyConfig) *GoProxy
+```
+New registers a new reverseproxy for each provided ProxyConfig
+
+#### func  NewFromConfig
+
+```go
+func NewFromConfig(config ProxyConfig) *GoProxy
 ```
 NewGoProxy registers a new reverseproxy for each provided ProxyConfig
 
@@ -36,18 +57,10 @@ func (g *GoProxy) GetProxy(prefix string) *httputil.ReverseProxy
 ```
 GetProxy returns the reverse proxy with the registered prefix
 
-#### func (*GoProxy) ListenAndServe
-
-```go
-func (g *GoProxy) ListenAndServe(addr string) error
-```
-ListenAndServe starts an http server on the given address with all of the
-registered reverse proxies
-
 #### func (*GoProxy) ModifyRequests
 
 ```go
-func (g *GoProxy) ModifyRequests(middleware RequestMiddleware)
+func (g *GoProxy) ModifyRequests(middleware middleware.RequestWare)
 ```
 ModifyResponses takes a Request Middleware function, traverses each registered
 reverse proxy, and modifies the http request it sends to its target prior to
@@ -56,15 +69,22 @@ sending
 #### func (*GoProxy) ModifyResponses
 
 ```go
-func (g *GoProxy) ModifyResponses(middleware ResponseMiddleware)
+func (g *GoProxy) ModifyResponses(middleware middleware.ResponseWare)
 ```
 ModifyResponses takes a Response Middleware function, traverses each registered
 reverse proxy, and modifies the http response it sends to the client
 
+#### func (*GoProxy) ModifyRouter
+
+```go
+func (g *GoProxy) ModifyRouter(middleware middleware.RouterWare)
+```
+ModifyRouter takes a router middleware function and wraps the proxies router
+
 #### func (*GoProxy) ModifyTransport
 
 ```go
-func (g *GoProxy) ModifyTransport(middleware TransportMiddleware)
+func (g *GoProxy) ModifyTransport(middleware middleware.TransportWare)
 ```
 ModifyResponses takes a Transport Middleware function, traverses each registered
 reverse proxy, and modifies the http roundtripper it uses
@@ -76,49 +96,18 @@ func (g *GoProxy) Proxies() map[string]*httputil.ReverseProxy
 ```
 Proxies returns all registered reverse proxies as a map of prefix:reverse proxy
 
-#### func (*GoProxy) WithPprof
+#### func (*GoProxy) WalkPaths
 
 ```go
-func (g *GoProxy) WithPprof() *GoProxy
+func (g *GoProxy) WalkPaths(fns ...mux.WalkFunc) error
 ```
+WalkPaths walks registered mux paths and modifies them
 
 #### type ProxyConfig
 
 ```go
-type ProxyConfig struct {
-	PathPrefix string
-	TargetUrl  string
-	Username   string
-	Password   string
-	Headers    map[string]string
-}
+type ProxyConfig map[string]*Config
 ```
 
-ProxyConfig is used to configure GoProxies reverse proxies
-
-#### type RequestMiddleware
-
-```go
-type RequestMiddleware func(func(req *http.Request)) func(req *http.Request)
-```
-
-RequestMiddleware is a function used to modify the incoming request of a reverse
-proxy from a client
-
-#### type ResponseMiddleware
-
-```go
-type ResponseMiddleware func(func(response *http.Response) error) func(response *http.Response) error
-```
-
-ResponseMiddleware is a function used to modify the response of a reverse proxy
-
-#### type TransportMiddleware
-
-```go
-type TransportMiddleware func(tripper http.RoundTripper) http.RoundTripper
-```
-
-TransportMiddleware is a function used to modify the http RoundTripper that is
-used by a reverse proxy. The default RoundTripper is initially
-http.DefaultTransport
+ProxyConfig is a map. The key should be a path prefix that will be handled by
+the router
