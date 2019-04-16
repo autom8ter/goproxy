@@ -36,13 +36,6 @@ func New(config ProxyConfig) *GoProxy
 ```
 New registers a new reverseproxy for each provided ProxyConfig
 
-#### func  NewFromConfig
-
-```go
-func NewFromConfig(config ProxyConfig) *GoProxy
-```
-NewGoProxy registers a new reverseproxy for each provided ProxyConfig
-
 #### func (*GoProxy) AsHandlerFunc
 
 ```go

@@ -2,11 +2,12 @@ package goproxy_test
 
 import (
 	"github.com/autom8ter/goproxy"
-	"log"
-	"net/http"
+	"github.com/autom8ter/objectify"
 	"os"
 	"testing"
 )
+
+var util = objectify.New()
 
 var twilioTarget = "https://api.twilio.com/2010-04-01/Accounts/" + os.Getenv("TWILIO_ACCOUNT_SID")
 
@@ -47,8 +48,5 @@ func TestNewGoProxy(t *testing.T) {
 		if v.Director == nil {
 			t.Fatal("registered nil reverse proxy director")
 		}
-	}
-	if err := http.ListenAndServe(":8080", gProxy); err != nil {
-		log.Fatalln(err.Error())
 	}
 }

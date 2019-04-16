@@ -65,7 +65,7 @@ func main() {
 ### Client (curl)
 
 ```text
-curl -X POST localhost:8080/Messages.json -d "To={SEND_TO_NUMBER" "From={SEND_FROM_NUMBER" "Body={SMS_BODY"
+curl -X POST localhost:8080/Messages.json -d "To={SEND_TO_NUMBER" "From={SEND_FROM_NUMBER" "Body={SMS_BODY}"
 ```
 
 ## Configuration

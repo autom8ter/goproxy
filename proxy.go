@@ -53,27 +53,6 @@ func New(config ProxyConfig) *GoProxy {
 	return g
 }
 
-//NewGoProxy registers a new reverseproxy for each provided ProxyConfig
-func NewFromConfig(config ProxyConfig) *GoProxy {
-	g := &GoProxy{
-		Router:  mux.NewRouter(),
-		proxies: make(map[string]*httputil.ReverseProxy),
-	}
-
-	for k, v := range config {
-		if err := util.Validate(v); err != nil {
-			util.Fatalln(err.Error())
-		}
-		g.proxies[k] = &httputil.ReverseProxy{
-			Director: g.directorFunc(v),
-		}
-	}
-	for path, prox := range g.proxies {
-		g.Handle(path, prox)
-	}
-	return g
-}
-
 func (g *GoProxy) directorFunc(config *Config) func(req *http.Request) {
 	target, err := url.Parse(config.TargetUrl)
 	if err != nil {
