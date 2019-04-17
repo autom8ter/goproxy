@@ -40,6 +40,8 @@ func (g *GoProxy) ServeHTTP(w http.ResponseWriter, r *http.Request)
 ## Example
 
 ### Code:
+
+#### Proxy:
 ```text
 
 var BaseURL = "https://api.stripe.com/v1/customers"
@@ -55,6 +57,10 @@ func CreateCustomer(w http.ResponseWriter, r *http.Request) {
 	proxy.ServeHTTP(w, r)
 }
 
+```
+#### Callback:
+```go
+
 func CustomerCallback(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	bits, err := ioutil.ReadAll(r.Body)
@@ -68,10 +74,12 @@ func CustomerCallback(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	//Send back just the customer id to the original requester
 	fmt.Fprintf(w, "%s", util.Handle.MarshalJSON(resp.ID))
 	return
 }
 
+//This is a go representation of the stripe customers response
 type Response struct {
 	ID              string      `json:"id"`
 	Object          string      `json:"object"`
@@ -112,7 +120,6 @@ type Response struct {
 }
 
 ```
-
 ### Deploy:
 
     callback:
@@ -122,5 +129,5 @@ type Response struct {
     	gcloud functions deploy CreateCustomer --set-env-vars ACCOUNT=XXXXXX,KEY=XXXXXX--runtime go111 --trigger-http
 
 
-### Output: (customer_ID)
+### Output: (original client)
     cust_XXXXXXXXX
