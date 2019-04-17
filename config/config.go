@@ -11,7 +11,7 @@ import (
 //Config is used to configure a reverse proxy handler(one route)
 type Config struct {
 	TargetUrl           string `validate:"required"`
-	Client_Secret       string
+	Secret              string `validate:"required"`
 	Headers             map[string]string
 	FormValues          map[string]string
 	FlushInterval       time.Duration
