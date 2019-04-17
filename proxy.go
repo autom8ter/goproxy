@@ -17,11 +17,14 @@ type GoProxy struct {
 }
 
 func (g *GoProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	err := g.auth.CheckJWT(w, r)
-	if err != nil {
-		return
-	}
-	g.r.ServeHTTP(w, r)
+	g.auth.HandlerWithNext(w, r, func(writer http.ResponseWriter, request *http.Request) {
+		g.r.ServeHTTP(w, r)
+	})
+}
+
+func (g *GoProxy) ListenAndServe(addr string) {
+	util.Handle.Entry().Printf("starting proxy on: %s\n", addr)
+	util.Handle.Entry().Fatalln(http.ListenAndServe(addr, g))
 }
 
 //NewGoProxy registers a new reverseproxy handler for each provided config with the specified path prefix

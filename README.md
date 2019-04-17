@@ -2,23 +2,19 @@
 --
     import "github.com/autom8ter/goproxy"
 
-
 ## Example
 
 ```go
+
 var BaseURL = "https://api.stripe.com/v1/customers"
 
 var proxy = goproxy.NewGoProxy(&config.Config{
 	TargetUrl:           BaseURL,
-	Secret:              os.Getenv("SECRET"), //used for jwt signing
-	ResponseCallbackURL: os.Getenv("CALLBACK"), //response callback 
+	Secret:              os.Getenv("SECRET"),//used for signing json web tokens
 })
 
 func main() {
-	log.Println("starting proxy on :8081")
-	if err := http.ListenAndServe(":8081", proxy); err != nil {
-		log.Fatalln(err.Error())
-	}
+	proxy.ListenAndServe(":8080")
 }
 
 ```
@@ -41,6 +37,12 @@ func NewGoProxy(config *config.Config) *GoProxy
 ```
 NewGoProxy registers a new reverseproxy handler for each provided config with
 the specified path prefix
+
+#### func (*GoProxy) ListenAndServe
+
+```go
+func (g *GoProxy) ListenAndServe(addr string)
+```
 
 #### func (*GoProxy) ServeHTTP
 
