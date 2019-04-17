@@ -13,13 +13,7 @@ import (
 var (
 	util    = objectify.Default()
 	pconfig = &goproxy.ProxyConfig{
-		Configs: []*goproxy.Config{
-			{
-				PathPrefix: "/twilio",
-				TargetUrl:  "https://api.twilio.com/2010-04-01",
-			},
-		},
-	}
+		Configs: []*goproxy.Config{}}
 	addr   string
 	config string
 )
@@ -48,7 +42,7 @@ var serveCmd = &cobra.Command{
 	Short: "start the GoProxy server",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		for i, p := range pconfig.Configs {
-			fmt.Printf("index: %v | registered proxy config: %s\n", i, util.MarshalJSON(p))
+			fmt.Printf("index: %v | registered proxy config: %s\n", i, string(util.MarshalJSON(p)))
 		}
 		util.Entry().Debugf("starting GoProxy server: %s", addr)
 		return http.ListenAndServe(addr, goproxy.New(pconfig))
@@ -57,7 +51,7 @@ var serveCmd = &cobra.Command{
 
 func main() {
 	if err := root.Execute(); err != nil {
-		util.Fatalln(util.WrapErr(err, "failed to run GoProxy"))
+		util.Entry().Fatalln(util.WrapErr(err, "failed to run GoProxy"))
 	}
 }
 
@@ -69,12 +63,12 @@ func init() {
 	_ = viper.BindPFlags(root.PersistentFlags())
 	viper.AutomaticEnv()
 	if err := viper.ReadInConfig(); err != nil {
-		util.Fatalln(util.WrapErr(err, "a config file is required to run GoProxy").Error())
+		util.Entry().Fatalln(util.WrapErr(err, "a config file is required to run GoProxy").Error())
 	}
 	if err := json.Unmarshal(util.MarshalJSON(viper.AllSettings()), pconfig); err != nil {
-		util.Fatalln(err.Error())
+		util.Entry().Fatalln(err.Error())
 	}
 	if len(pconfig.Configs) == 0 {
-		util.Fatalln(util.NewError("0 proxy configs registered from config file"))
+		util.Entry().Fatalln(util.NewError("0 proxy configs registered from config file"))
 	}
 }

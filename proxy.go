@@ -48,7 +48,7 @@ func New(config *ProxyConfig) *GoProxy {
 	}
 	for _, v := range config.Configs {
 		if err := util.Validate(v); err != nil {
-			util.Fatalln(err.Error())
+			util.Entry().Fatalln(err.Error())
 		}
 		g.proxies[v.PathPrefix] = &httputil.ReverseProxy{
 			Director: g.directorFunc(v),
@@ -94,15 +94,15 @@ func (g *GoProxy) directorFunc(config *Config) func(req *http.Request) {
 			req.Header.Set("User-Agent", "")
 		}
 
-		util.Debugf("proxied request: %s\n", util.MarshalJSON(&logging.Request{
-			Received:  start,
+		util.Entry().Debugf("proxied request: %s\n", util.MarshalJSON(&logging.Request{
+			Received:  util.HumanizeTime(start),
 			Method:    req.Method,
 			URL:       req.URL.String(),
 			UserAgent: req.UserAgent(),
 			Referer:   req.Referer(),
 			Proto:     req.Proto,
 			RemoteIP:  req.RemoteAddr,
-			Latency:   time.Since(start),
+			Latency:   time.Since(start).String(),
 		}))
 	}
 }

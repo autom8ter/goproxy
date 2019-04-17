@@ -17,6 +17,8 @@ github.com/autom8ter/objectify v0.0.0-20190415004124-24343395b7d6 h1:Wv2kUec92Md
 github.com/autom8ter/objectify v0.0.0-20190415004124-24343395b7d6/go.mod h1:X0Bgvs/G/7yaxBPOKVDsmW6FaoVf1Ax8UhJqQOT5BO4=
 github.com/autom8ter/objectify v0.0.0-20190416215222-c0a994cb5a82 h1:x3qZlM5euzvVzksGC+qQgkrtA9g0viKE0Koih2bb2SQ=
 github.com/autom8ter/objectify v0.0.0-20190416215222-c0a994cb5a82/go.mod h1:6SedWh0h4zIfnBnqfxONPJhKJjeQ+lweBRdWog0fmCA=
+github.com/autom8ter/objectify v0.0.0-20190416235606-534b2554f5fe h1:ACIuNoSbc2oYdcyTHkMepxtJ2ntnwmygFjD+3Ty6HEY=
+github.com/autom8ter/objectify v0.0.0-20190416235606-534b2554f5fe/go.mod h1:Hg+n5d+Qj3M0I+vnIo+009AoX2qzOtQJ20UVHYnjF3Q=
 github.com/beorn7/perks v0.0.0-20180321164747-3a771d992973/go.mod h1:Dwedo/Wpr24TaqPxmxbtue+5NUziq4I4S80YR8gNf3Q=
 github.com/client9/misspell v0.3.4/go.mod h1:qj6jICC3Q7zFZvVWo7KLAzC3yx5G7kyvSDkc90ppPyw=
 github.com/coreos/etcd v3.3.10+incompatible/go.mod h1:uF7uidLiAD3TWHmW31ZFd/JWoc32PjwdhPthX9715RE=
