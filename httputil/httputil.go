@@ -9,11 +9,11 @@ package httputil
 import (
 	"context"
 	"fmt"
+	"github.com/sirupsen/logrus"
 	"io"
 	"log"
 	"net"
 	"net/http"
-	"net/url"
 	"strings"
 	"sync"
 	"time"
@@ -53,26 +53,26 @@ type ReverseProxy struct {
 	// that occur when attempting to proxy the request.
 	// If nil, logging goes to os.Stderr via the log package's
 	// standard logger.
-	ErrorLog *log.Logger
+	ErrorLog *logrus.Entry
 
 	// BufferPool optionally specifies a buffer pool to
 	// get byte slices for use by io.CopyBuffer when
 	// copying HTTP response bodies.
 	BufferPool BufferPool
 
-	// ModifyResponse is an optional function that modifies the
+	// ResponseCallback is an optional function that modifies the
 	// Response from the backend. It is called if the backend
 	// returns a response at all, with any HTTP status code.
 	// If the backend is unreachable, the optional ErrorHandler is
-	// called without any call to ModifyResponse.
+	// called without any call to ResponseCallback.
 	//
-	// If ModifyResponse returns an error, ErrorHandler is called
+	// If ResponseCallback returns an error, ErrorHandler is called
 	// with its error value. If ErrorHandler is nil, its default
 	// implementation is used.
-	ModifyResponse func(*http.Response) error
+	ResponseCallback func(*http.Response) error
 
 	// ErrorHandler is an optional function that handles errors
-	// reaching the backend or errors from ModifyResponse.
+	// reaching the backend or errors from ResponseCallback.
 	//
 	// If nil, the default is to log the provided error and return
 	// a 502 Status Bad Gateway response.
@@ -96,32 +96,6 @@ func singleJoiningSlash(a, b string) string {
 		return a + "/" + b
 	}
 	return a + b
-}
-
-// NewSingleHostReverseProxy returns a new ReverseProxy that routes
-// URLs to the scheme, host, and base path provided in target. If the
-// target's path is "/base" and the incoming request was for "/dir",
-// the target request will be for /base/dir.
-// NewSingleHostReverseProxy does not rewrite the Host header.
-// To rewrite Host headers, use ReverseProxy directly with a custom
-// Director policy.
-func NewSingleHostReverseProxy(target *url.URL) *ReverseProxy {
-	targetQuery := target.RawQuery
-	director := func(req *http.Request) {
-		req.URL.Scheme = target.Scheme
-		req.URL.Host = target.Host
-		req.URL.Path = singleJoiningSlash(target.Path, req.URL.Path)
-		if targetQuery == "" || req.URL.RawQuery == "" {
-			req.URL.RawQuery = targetQuery + req.URL.RawQuery
-		} else {
-			req.URL.RawQuery = targetQuery + "&" + req.URL.RawQuery
-		}
-		if _, ok := req.Header["User-Agent"]; !ok {
-			// explicitly disable User-Agent so it's not set to default value
-			req.Header.Set("User-Agent", "")
-		}
-	}
-	return &ReverseProxy{Director: director}
 }
 
 func copyHeader(dst, src http.Header) {
@@ -160,7 +134,7 @@ var hopHeaders = []string{
 }
 
 func (p *ReverseProxy) defaultErrorHandler(rw http.ResponseWriter, req *http.Request, err error) {
-	p.logf("http: proxy error: %v", err)
+	p.logf("GoProxy ❌ | %v", err)
 	rw.WriteHeader(http.StatusBadGateway)
 }
 
@@ -171,13 +145,13 @@ func (p *ReverseProxy) getErrorHandler() func(http.ResponseWriter, *http.Request
 	return p.defaultErrorHandler
 }
 
-// modifyResponse conditionally runs the optional ModifyResponse hook
+// modifyResponse conditionally runs the optional ResponseCallback hook
 // and reports whether the request should proceed.
 func (p *ReverseProxy) modifyResponse(rw http.ResponseWriter, res *http.Response, req *http.Request) bool {
-	if p.ModifyResponse == nil {
+	if p.ResponseCallback == nil {
 		return true
 	}
-	if err := p.ModifyResponse(res); err != nil {
+	if err := p.ResponseCallback(res); err != nil {
 		res.Body.Close()
 		p.getErrorHandler()(rw, req, err)
 		return false
@@ -417,7 +391,7 @@ func (p *ReverseProxy) copyBuffer(dst io.Writer, src io.Reader, buf []byte) (int
 	for {
 		nr, rerr := src.Read(buf)
 		if rerr != nil && rerr != io.EOF && rerr != context.Canceled {
-			p.logf("httputil: ReverseProxy read error during body copy: %v", rerr)
+			p.logf("GoProxy ❌ | read error during body copy: %v", rerr)
 		}
 		if nr > 0 {
 			nw, werr := dst.Write(buf[:nr])

@@ -23,13 +23,12 @@ func NewGoProxy(config *config.Config) *GoProxy {
 	}
 	return &GoProxy{
 		r: &httputil.ReverseProxy{
-			Director:       config.DirectorFunc(),
-			Transport:      nil,
-			FlushInterval:  config.FlushInterval,
-			ErrorLog:       nil,
-			BufferPool:     nil,
-			ModifyResponse: nil,
-			ErrorHandler:   nil,
+			Director:         config.DirectorFunc(),
+			Transport:        http.DefaultTransport,
+			FlushInterval:    config.FlushInterval,
+			ErrorLog:         config.Entry(),
+			ResponseCallback: config.ResponseCallback(),
+			ErrorHandler:     nil,
 		},
 	}
 }
