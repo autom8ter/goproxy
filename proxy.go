@@ -29,18 +29,16 @@ type Config struct {
 	FormValues map[string]string
 }
 
-//ProxyConfig configures the entire reverse proxy
-type ProxyConfig struct {
-	Configs []*Config `validate:"required"`
-}
-
-//New registers a new reverseproxy for each provided ProxyConfig
-func New(config *ProxyConfig) *GoProxy {
+//New registers a new reverseproxy for each provided config
+func New(configs ...*Config) *GoProxy {
+	if len(configs) == 0 {
+		util.Entry().Warnln("zero configs passed in creation of GoProxy")
+	}
 	proxy := &GoProxy{
 		Router:  mux.NewRouter(),
 		proxies: make(map[string]*httputil.ReverseProxy),
 	}
-	for _, v := range config.Configs {
+	for _, v := range configs {
 		if err := util.Validate(v); err != nil {
 			util.Entry().Fatalln(err.Error())
 		}
@@ -54,14 +52,17 @@ func New(config *ProxyConfig) *GoProxy {
 	return proxy
 }
 
-//NewSecure registers a new secure reverseproxy for each provided ProxyConfig. It is the same as New, except with CORS options and a
+//NewSecure registers a new secure reverseproxy for each provided configs. It is the same as New, except with CORS options and a
 // JWT middleware that checks for a signed bearer token
-func NewSecure(secret string, opts cors.Options, config *ProxyConfig) *GoProxy {
+func NewSecure(secret string, opts cors.Options, configs ...*Config) *GoProxy {
+	if len(configs) == 0 {
+		util.Entry().Warnln("zero configs passed in creation of GoProxy")
+	}
 	proxy := &GoProxy{
 		Router:  mux.NewRouter(),
 		proxies: make(map[string]*httputil.ReverseProxy),
 	}
-	for _, v := range config.Configs {
+	for _, v := range configs {
 		if err := util.Validate(v); err != nil {
 			util.Entry().Fatalln(err.Error())
 		}
@@ -178,6 +179,7 @@ func (g *GoProxy) AsHandlerFunc() http.HandlerFunc {
 	}
 }
 
+//ListenAndServe starts the GoProxy server on the specified address
 func (g *GoProxy) ListenAndServe(addr string) error {
 	return http.ListenAndServe(addr, g)
 }
