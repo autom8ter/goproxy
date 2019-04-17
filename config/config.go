@@ -75,9 +75,9 @@ func (c *Config) ResponseCallback() func(r *http.Response) error {
 		resp, err := http.DefaultClient.Do(&http.Request{
 			Method:     "POST",
 			URL:        u,
-			Header:     cloneHeader(r.Header),
+			Header:     r.Header,
 			Body:       r.Body,
-			Trailer:    nil,
+			Trailer:    r.Trailer,
 			RemoteAddr: r.Request.RemoteAddr,
 		})
 		r = resp
@@ -104,12 +104,10 @@ type requestLog struct {
 	Latency   string `json:"latency"`
 }
 
-func cloneHeader(h http.Header) http.Header {
-	h2 := make(http.Header, len(h))
-	for k, vv := range h {
-		vv2 := make([]string, len(vv))
-		copy(vv2, vv)
-		h2[k] = vv2
+func copyHeader(dst, src http.Header) {
+	for k, vv := range src {
+		for _, v := range vv {
+			dst.Add(k, v)
+		}
 	}
-	return h2
 }

@@ -19,8 +19,6 @@ type GoProxy struct {
 func (g *GoProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	err := g.auth.CheckJWT(w, r)
 	if err != nil {
-
-		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
 	}
 	g.r.ServeHTTP(w, r)

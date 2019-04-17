@@ -1,32 +1,21 @@
-package customers
+package main
 
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/autom8ter/goproxy"
-	"github.com/autom8ter/goproxy/config"
 	"github.com/autom8ter/goproxy/util"
 	"io/ioutil"
 	"net/http"
-	"os"
 )
 
-var BaseURL = "https://api.stripe.com/v1/customers"
+type callback struct{}
 
-var proxy = goproxy.NewGoProxy(&config.Config{
-	TargetUrl:           BaseURL,
-	Headers:             nil,
-	Secret: 			os.Getenv("CALLBACK"),
-	FormValues:          nil,
-	FlushInterval:       0,
-	ResponseCallbackURL: os.Getenv("CALLBACK"),
-})
-
-func CreateCustomer(w http.ResponseWriter, r *http.Request) {
-	proxy.ServeHTTP(w, r)
+func main() {
+	util.Handle.Entry().Println("starting on :8080")
+	util.Handle.Entry().Fatalln(http.ListenAndServe(":8080", &callback{}).Error())
 }
 
-func CustomerCallback(w http.ResponseWriter, r *http.Request) {
+func (c *callback) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	bits, err := ioutil.ReadAll(r.Body)
 	if err != nil {

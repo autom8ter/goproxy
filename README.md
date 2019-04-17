@@ -3,6 +3,25 @@
     import "github.com/autom8ter/goproxy"
 
 
+## Example
+
+```go
+var BaseURL = "https://api.stripe.com/v1/customers"
+
+var proxy = goproxy.NewGoProxy(&config.Config{
+	TargetUrl:           BaseURL,
+	Secret:              os.Getenv("SECRET"), //used for jwt signing
+	ResponseCallbackURL: os.Getenv("CALLBACK"), //response callback 
+})
+
+func main() {
+	log.Println("starting proxy on :8081")
+	if err := http.ListenAndServe(":8081", proxy); err != nil {
+		log.Fatalln(err.Error())
+	}
+}
+
+```
 ## Usage
 
 #### type GoProxy
