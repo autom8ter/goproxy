@@ -15,6 +15,7 @@ type Config struct {
 	Password   string
 	Headers    map[string]string
 	FormValues map[string]string
+	IsGrpc     bool
 }
 ```
 
@@ -50,6 +51,12 @@ AsHandlerFunc converts a GoProxy to an http.HandlerFunc for convenience
 func (g *GoProxy) GetProxy(prefix string) *httputil.ReverseProxy
 ```
 GetProxy returns the reverse proxy with the registered prefix
+
+#### func (*GoProxy) ListenAndServe
+
+```go
+func (g *GoProxy) ListenAndServe(addr string) error
+```
 
 #### func (*GoProxy) ModifyRequests
 
