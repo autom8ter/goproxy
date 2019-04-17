@@ -46,8 +46,6 @@ func New(config *ProxyConfig) *GoProxy {
 		Router:  mux.NewRouter(),
 		proxies: make(map[string]*httputil.ReverseProxy),
 	}
-	gw := runtime.NewServeMux()
-	dopts := []grpc.DialOption{grpc.WithInsecure()}
 	for _, v := range config.Configs {
 		if err := util.Validate(v); err != nil {
 			util.Fatalln(err.Error())
