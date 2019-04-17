@@ -5,10 +5,12 @@ import (
 	"github.com/autom8ter/goproxy/middleware"
 	"github.com/autom8ter/objectify"
 	"github.com/gorilla/mux"
+	"google.golang.org/grpc"
 	"log"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"strings"
 	"time"
 )
 
@@ -154,4 +156,18 @@ func (g *GoProxy) AsHandlerFunc() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		g.ServeHTTP(writer, request)
 	}
+}
+
+func (g *GoProxy) handleGRPC(grpcServer *grpc.Server) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.ProtoMajor == 2 && strings.Contains(r.Header.Get("Content-Type"), "application/grpc") {
+			grpcServer.ServeHTTP(w, r)
+		} else {
+			g.ServeHTTP(w, r)
+		}
+	})
+}
+
+func (g *GoProxy) ListenAndServe(addr string) error {
+	return http.ListenAndServe(addr, g)
 }
