@@ -47,6 +47,12 @@ type RouterWare func(r *mux.Router) *mux.Router
 
 RouterWare is a function used to modify the mux
 
+#### func  WithCORS
+
+```go
+func WithCORS(options cors.Options) RouterWare
+```
+
 #### func  WithJWT
 
 ```go
