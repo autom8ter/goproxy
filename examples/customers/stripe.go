@@ -1,4 +1,4 @@
-package twilio
+package customers
 
 import (
 	"encoding/json"
@@ -15,12 +15,13 @@ var BaseURL = "https://api.stripe.com/v1/customers"
 
 var proxy = goproxy.NewGoProxy(&config.Config{
 	TargetUrl:           BaseURL,
-	Username:            os.Getenv("STRIPE_ACCOUNT"),
-	Password:            os.Getenv("STRIPE_KEY"),
+	Username:            os.Getenv("ACCOUNT"),
+	Password:            os.Getenv("KEY"),
+	ResponseCallbackURL: os.Getenv("CALLBACK"),
 })
 
 func CreateCustomer(w http.ResponseWriter, r *http.Request) {
-	proxy.ServeHTTP(w,r)
+	proxy.ServeHTTP(w, r)
 }
 
 func CustomerCallback(w http.ResponseWriter, r *http.Request) {

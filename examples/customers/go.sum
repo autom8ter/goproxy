@@ -7,6 +7,8 @@ github.com/Masterminds/sprig v2.18.0+incompatible/go.mod h1:y6hNFY5UBTIWBxnzTeuN
 github.com/auth0/go-jwt-middleware v0.0.0-20170425171159-5493cabe49f7/go.mod h1:LWMyo4iOLWXHGdBki7NIht1kHru/0wM179h+d3g8ATM=
 github.com/autom8ter/goproxy v0.0.0-20190417061510-a22eefa7e1c5 h1:dDztc5zjU7pDl+fPG0busHdTtHDN6zZkBNbERGhR5Ys=
 github.com/autom8ter/goproxy v0.0.0-20190417061510-a22eefa7e1c5/go.mod h1:DwhPKXha8zirnR5HxVyl4zkMLVCvMYThulAgDU8rwpg=
+github.com/autom8ter/goproxy v0.0.0-20190417074219-9629254bd0e5 h1:Cy/e7DMgGHmbCh+tZ3pmGWDEe/NPa2bm7X18TTv9s30=
+github.com/autom8ter/goproxy v0.0.0-20190417074219-9629254bd0e5/go.mod h1:pJltmXiPdIRVcoWAfADf8foJyJrh+N5PZsR2l1WUuLM=
 github.com/autom8ter/objectify v0.0.0-20190416235606-534b2554f5fe h1:ACIuNoSbc2oYdcyTHkMepxtJ2ntnwmygFjD+3Ty6HEY=
 github.com/autom8ter/objectify v0.0.0-20190416235606-534b2554f5fe/go.mod h1:Hg+n5d+Qj3M0I+vnIo+009AoX2qzOtQJ20UVHYnjF3Q=
 github.com/codegangsta/negroni v1.0.0/go.mod h1:v0y3T5G7Y1UlFfyxFn/QLRU4a2EuNau2iZY63YTKWo0=
