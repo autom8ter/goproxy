@@ -1,17 +1,13 @@
 package goproxy
 
 import (
-	"github.com/autom8ter/goproxy/logging"
 	"github.com/autom8ter/goproxy/middleware"
 	"github.com/autom8ter/objectify"
 	"github.com/gorilla/mux"
-	"github.com/grpc-ecosystem/grpc-gateway/runtime"
-	"google.golang.org/grpc"
-	"log"
+	"github.com/rs/cors"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
-	"strings"
 	"time"
 )
 
@@ -19,7 +15,6 @@ var util = objectify.Default()
 
 //GoProxy is an API Gateway/Reverse Proxy and http.ServeMux/http.Handler
 type GoProxy struct {
-	gmux *runtime.ServeMux
 	*mux.Router
 	proxies map[string]*httputil.ReverseProxy
 }
@@ -32,17 +27,16 @@ type Config struct {
 	Password   string
 	Headers    map[string]string
 	FormValues map[string]string
-	IsGrpc     bool
 }
 
 //ProxyConfig configures the entire reverse proxy
 type ProxyConfig struct {
-	Configs []*Config
+	Configs []*Config `validate:"required"`
 }
 
 //New registers a new reverseproxy for each provided ProxyConfig
 func New(config *ProxyConfig) *GoProxy {
-	g := &GoProxy{
+	proxy := &GoProxy{
 		Router:  mux.NewRouter(),
 		proxies: make(map[string]*httputil.ReverseProxy),
 	}
@@ -50,20 +44,43 @@ func New(config *ProxyConfig) *GoProxy {
 		if err := util.Validate(v); err != nil {
 			util.Entry().Fatalln(err.Error())
 		}
-		g.proxies[v.PathPrefix] = &httputil.ReverseProxy{
-			Director: g.directorFunc(v),
+		proxy.proxies[v.PathPrefix] = &httputil.ReverseProxy{
+			Director: proxy.directorFunc(v),
 		}
 	}
-	for path, prox := range g.proxies {
-		g.Handle(path, prox)
+	for path, prox := range proxy.proxies {
+		proxy.Handle(path, prox)
 	}
-	return g
+	return proxy
+}
+
+//NewSecure registers a new secure reverseproxy for each provided ProxyConfig. It is the same as New, except with CORS options and a
+// JWT middleware that checks for a signed bearer token
+func NewSecure(secret string, opts cors.Options, config *ProxyConfig) *GoProxy {
+	proxy := &GoProxy{
+		Router:  mux.NewRouter(),
+		proxies: make(map[string]*httputil.ReverseProxy),
+	}
+	for _, v := range config.Configs {
+		if err := util.Validate(v); err != nil {
+			util.Entry().Fatalln(err.Error())
+		}
+		proxy.proxies[v.PathPrefix] = &httputil.ReverseProxy{
+			Director: proxy.directorFunc(v),
+		}
+	}
+	for path, prox := range proxy.proxies {
+		proxy.Handle(path, prox)
+	}
+	proxy.Router = middleware.WithJWT(secret)(proxy.Router)
+	proxy.Router = middleware.WithCORS(opts)(proxy.Router)
+	return proxy
 }
 
 func (g *GoProxy) directorFunc(config *Config) func(req *http.Request) {
 	target, err := url.Parse(config.TargetUrl)
 	if err != nil {
-		log.Fatalln(err.Error())
+		util.Entry().Fatalln(err.Error())
 	}
 	targetQuery := target.RawQuery
 	return func(req *http.Request) {
@@ -89,12 +106,13 @@ func (g *GoProxy) directorFunc(config *Config) func(req *http.Request) {
 		} else {
 			req.URL.RawQuery = targetQuery + "&" + req.URL.RawQuery
 		}
+
 		if _, ok := req.Header["User-Agent"]; !ok {
 			// explicitly disable User-Agent so it's not set to default value
 			req.Header.Set("User-Agent", "")
 		}
 
-		util.Entry().Debugf("proxied request: %s\n", util.MarshalJSON(&logging.Request{
+		util.Entry().Debugf("proxied request: %s\n", util.MarshalJSON(&middleware.RequestLog{
 			Received:  util.HumanizeTime(start),
 			Method:    req.Method,
 			URL:       req.URL.String(),
@@ -158,16 +176,6 @@ func (g *GoProxy) AsHandlerFunc() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		g.ServeHTTP(writer, request)
 	}
-}
-
-func (g *GoProxy) handleGRPC(grpcServer *grpc.Server) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.ProtoMajor == 2 && strings.Contains(r.Header.Get("Content-Type"), "application/grpc") {
-			grpcServer.ServeHTTP(w, r)
-		} else {
-			g.ServeHTTP(w, r)
-		}
-	})
 }
 
 func (g *GoProxy) ListenAndServe(addr string) error {

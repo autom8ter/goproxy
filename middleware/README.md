@@ -5,6 +5,23 @@
 
 ## Usage
 
+#### type RequestLog
+
+```go
+type RequestLog struct {
+	Received  string `json:"received"`
+	Method    string `json:"method"`
+	URL       string `json:"url"`
+	Body      string `json:"body"`
+	UserAgent string `json:"user_agent"`
+	Referer   string `json:"referer"`
+	Proto     string `json:"proto"`
+	RemoteIP  string `json:"remote_ip"`
+	Latency   string `json:"latency"`
+}
+```
+
+
 #### type RequestWare
 
 ```go
@@ -29,6 +46,24 @@ type RouterWare func(r *mux.Router) *mux.Router
 ```
 
 RouterWare is a function used to modify the mux
+
+#### func  WithJWT
+
+```go
+func WithJWT(secret string) RouterWare
+```
+
+#### func  WithMetrics
+
+```go
+func WithMetrics() RouterWare
+```
+
+#### func  WithProf
+
+```go
+func WithProf() RouterWare
+```
 
 #### type TransportWare
 
