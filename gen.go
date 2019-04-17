@@ -1,3 +1,3 @@
-//go:generate godocdown -o GODOC.md
+//go:generate godocdown -o README.md
 
 package goproxy

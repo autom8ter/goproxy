@@ -1,68 +1,123 @@
-# GoProxy
+# goproxy
+--
+    import "github.com/autom8ter/goproxy"
 
 
-[GoDoc](https://github.com/autom8ter/goproxy/blob/master/GODOC.md)
+## Usage
 
-    go get github.com/autom8ter/goproxy/...
+#### type Config
 
-
-## Overview
-GoProxy is a lightweight reverse proxy server written in Golang
-
-It registers target urls and appends basic authentication, headers, form values, and more to the inbound request so that you may regulate and modify requests to 
-many different API endpoints from a single gateway.
-
-run:
-    goproxy
-
-output:
-
-```text
-              (                         
- (            )\ )                      
- )\ )        (()/( (            )  (    
-(()/(     (   /(_)))(    (   ( /(  )\ ) 
- /(_))_   )\ (_)) (()\   )\  )\())(()/( 
-(_)) __| ((_)| _ \ ((_) ((_)((_)\  )(_))
-  | (_ |/ _ \|  _/| '_|/ _ \\ \ / | || |
-   \___|\___/|_|  |_|  \___//_\_\  \_, |
-                                   |__/
-
-Current Config:
-map[]
-
-Usage:
-  GoProxy [command]
-
-Available Commands:
-  help        Help about any command
-  serve       start the GoProxy server
-
-Flags:
-  -a, --addr string     address to run server on (default ":8080")
-  -c, --config string   relative path to file containing proxy configuration (default "config.yaml")
-  -h, --help            help for GoProxy
-      --version         version for GoProxy
-
-Use "GoProxy [command] --help" for more information about a command.
-
+```go
+type Config struct {
+	PathPrefix string `validate:"required"`
+	TargetUrl  string `validate:"required"`
+	Username   string
+	Password   string
+	Headers    map[string]string
+	FormValues map[string]string
+}
 ```
 
-run:
+Config is used to configure a reverse proxy handler(one route)
 
-    goproxy serve
+#### type GoProxy
 
-output:
+```go
+type GoProxy struct {
+	*mux.Router
+}
+```
 
-    starting GoProxy server: :8080
+GoProxy is an API Gateway/Reverse Proxy and http.ServeMux/http.Handler
 
+#### func  New
 
+```go
+func New(config *ProxyConfig) *GoProxy
+```
+New registers a new reverseproxy for each provided ProxyConfig
 
-## Example Config File
+#### func  NewSecure
 
-**COMING SOON**
+```go
+func NewSecure(secret string, opts cors.Options, config *ProxyConfig) *GoProxy
+```
+NewSecure registers a new secure reverseproxy for each provided ProxyConfig. It
+is the same as New, except with CORS options and a JWT middleware that checks
+for a signed bearer token
 
+#### func (*GoProxy) AsHandlerFunc
 
-## TODO
+```go
+func (g *GoProxy) AsHandlerFunc() http.HandlerFunc
+```
+AsHandlerFunc converts a GoProxy to an http.HandlerFunc for convenience
 
-- [ ] Add JWT/OAuth2 based authentication
+#### func (*GoProxy) GetProxy
+
+```go
+func (g *GoProxy) GetProxy(prefix string) *httputil.ReverseProxy
+```
+GetProxy returns the reverse proxy with the registered prefix
+
+#### func (*GoProxy) ListenAndServe
+
+```go
+func (g *GoProxy) ListenAndServe(addr string) error
+```
+
+#### func (*GoProxy) ModifyRequests
+
+```go
+func (g *GoProxy) ModifyRequests(middleware middleware.RequestWare)
+```
+ModifyResponses takes a Request Middleware function, traverses each registered
+reverse proxy, and modifies the http request it sends to its target prior to
+sending
+
+#### func (*GoProxy) ModifyResponses
+
+```go
+func (g *GoProxy) ModifyResponses(middleware middleware.ResponseWare)
+```
+ModifyResponses takes a Response Middleware function, traverses each registered
+reverse proxy, and modifies the http response it sends to the client
+
+#### func (*GoProxy) ModifyRouter
+
+```go
+func (g *GoProxy) ModifyRouter(middleware middleware.RouterWare)
+```
+ModifyRouter takes a router middleware function and wraps the proxies router
+
+#### func (*GoProxy) ModifyTransport
+
+```go
+func (g *GoProxy) ModifyTransport(middleware middleware.TransportWare)
+```
+ModifyResponses takes a Transport Middleware function, traverses each registered
+reverse proxy, and modifies the http roundtripper it uses
+
+#### func (*GoProxy) Proxies
+
+```go
+func (g *GoProxy) Proxies() map[string]*httputil.ReverseProxy
+```
+Proxies returns all registered reverse proxies as a map of prefix:reverse proxy
+
+#### func (*GoProxy) WalkPaths
+
+```go
+func (g *GoProxy) WalkPaths(fns ...mux.WalkFunc) error
+```
+WalkPaths walks registered mux paths and modifies them
+
+#### type ProxyConfig
+
+```go
+type ProxyConfig struct {
+	Configs []*Config `validate:"required"`
+}
+```
+
+ProxyConfig configures the entire reverse proxy
