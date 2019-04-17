@@ -5,6 +5,7 @@ import (
 	"github.com/autom8ter/goproxy/middleware"
 	"github.com/autom8ter/objectify"
 	"github.com/gorilla/mux"
+	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"google.golang.org/grpc"
 	"log"
 	"net/http"
@@ -18,6 +19,7 @@ var util = objectify.Default()
 
 //GoProxy is an API Gateway/Reverse Proxy and http.ServeMux/http.Handler
 type GoProxy struct {
+	gmux *runtime.ServeMux
 	*mux.Router
 	proxies map[string]*httputil.ReverseProxy
 }
@@ -30,6 +32,7 @@ type Config struct {
 	Password   string
 	Headers    map[string]string
 	FormValues map[string]string
+	IsGrpc     bool
 }
 
 //ProxyConfig configures the entire reverse proxy
@@ -43,7 +46,8 @@ func New(config *ProxyConfig) *GoProxy {
 		Router:  mux.NewRouter(),
 		proxies: make(map[string]*httputil.ReverseProxy),
 	}
-
+	gw := runtime.NewServeMux()
+	dopts := []grpc.DialOption{grpc.WithInsecure()}
 	for _, v := range config.Configs {
 		if err := util.Validate(v); err != nil {
 			util.Fatalln(err.Error())
