@@ -16,7 +16,7 @@ var BaseURL = "https://api.stripe.com/v1/customers"
 var proxy = goproxy.NewGoProxy(&config.Config{
 	TargetUrl:           BaseURL,
 	Headers:             nil,
-
+	Secret: 			os.Getenv("CALLBACK"),
 	FormValues:          nil,
 	FlushInterval:       0,
 	ResponseCallbackURL: os.Getenv("CALLBACK"),

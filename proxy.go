@@ -33,7 +33,7 @@ func NewGoProxy(config *config.Config) *GoProxy {
 	}
 	j := jwtmiddleware.New(jwtmiddleware.Options{
 		ValidationKeyGetter: func(token *jwt.Token) (interface{}, error) {
-			return []byte(config.Client_Secret), nil
+			return []byte(config.Secret), nil
 		},
 		SigningMethod: jwt.SigningMethodHS256,
 	})
