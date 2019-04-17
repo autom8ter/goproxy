@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-var util = objectify.New()
+var util = objectify.Default()
 
 //GoProxy is an API Gateway/Reverse Proxy and http.ServeMux/http.Handler
 type GoProxy struct {
@@ -20,8 +20,9 @@ type GoProxy struct {
 	proxies map[string]*httputil.ReverseProxy
 }
 
-//Config is used to configure GoProxies reverse proxies
+//Config is used to configure a reverse proxy handler(one route)
 type Config struct {
+	PathPrefix string `validate:"required"`
 	TargetUrl  string `validate:"required"`
 	Username   string
 	Password   string
@@ -29,21 +30,23 @@ type Config struct {
 	FormValues map[string]string
 }
 
-//ProxyConfig is a map. The key should be a path prefix that will be handled by the router
-type ProxyConfig map[string]*Config
+//ProxyConfig configures the entire reverse proxy
+type ProxyConfig struct {
+	Configs []*Config
+}
 
 //New registers a new reverseproxy for each provided ProxyConfig
-func New(config ProxyConfig) *GoProxy {
+func New(config *ProxyConfig) *GoProxy {
 	g := &GoProxy{
 		Router:  mux.NewRouter(),
 		proxies: make(map[string]*httputil.ReverseProxy),
 	}
 
-	for k, v := range config {
+	for _, v := range config.Configs {
 		if err := util.Validate(v); err != nil {
 			util.Fatalln(err.Error())
 		}
-		g.proxies[k] = &httputil.ReverseProxy{
+		g.proxies[v.PathPrefix] = &httputil.ReverseProxy{
 			Director: g.directorFunc(v),
 		}
 	}

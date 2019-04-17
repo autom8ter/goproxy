@@ -9,6 +9,7 @@
 
 ```go
 type Config struct {
+	PathPrefix string `validate:"required"`
 	TargetUrl  string `validate:"required"`
 	Username   string
 	Password   string
@@ -17,7 +18,7 @@ type Config struct {
 }
 ```
 
-Config is used to configure GoProxies reverse proxies
+Config is used to configure a reverse proxy handler(one route)
 
 #### type GoProxy
 
@@ -32,7 +33,7 @@ GoProxy is an API Gateway/Reverse Proxy and http.ServeMux/http.Handler
 #### func  New
 
 ```go
-func New(config ProxyConfig) *GoProxy
+func New(config *ProxyConfig) *GoProxy
 ```
 New registers a new reverseproxy for each provided ProxyConfig
 
@@ -99,8 +100,9 @@ WalkPaths walks registered mux paths and modifies them
 #### type ProxyConfig
 
 ```go
-type ProxyConfig map[string]*Config
+type ProxyConfig struct {
+	Configs []*Config
+}
 ```
 
-ProxyConfig is a map. The key should be a path prefix that will be handled by
-the router
+ProxyConfig configures the entire reverse proxy
