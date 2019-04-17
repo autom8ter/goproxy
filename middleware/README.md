@@ -5,6 +5,26 @@
 
 ## Usage
 
+#### type HandlerWare
+
+```go
+type HandlerWare func(h http.Handler) http.Handler
+```
+
+RouterWare is a function used to modify the mux
+
+#### func  WithCORS
+
+```go
+func WithCORS(options cors.Options) HandlerWare
+```
+
+#### func  WithJWT
+
+```go
+func WithJWT(secret string) HandlerWare
+```
+
 #### type RequestLog
 
 ```go
@@ -38,38 +58,6 @@ type ResponseWare func(func(response *http.Response) error) func(response *http.
 ```
 
 ResponseWare is a function used to modify the response of a reverse proxy
-
-#### type RouterWare
-
-```go
-type RouterWare func(r *mux.Router) *mux.Router
-```
-
-RouterWare is a function used to modify the mux
-
-#### func  WithCORS
-
-```go
-func WithCORS(options cors.Options) RouterWare
-```
-
-#### func  WithJWT
-
-```go
-func WithJWT(secret string) RouterWare
-```
-
-#### func  WithMetrics
-
-```go
-func WithMetrics() RouterWare
-```
-
-#### func  WithProf
-
-```go
-func WithProf() RouterWare
-```
 
 #### type TransportWare
 

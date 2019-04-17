@@ -4,9 +4,12 @@ import (
 	"github.com/autom8ter/goproxy/middleware"
 	"github.com/autom8ter/objectify"
 	"github.com/gorilla/mux"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/cors"
 	"net/http"
 	"net/http/httputil"
+	"net/http/pprof"
 	"net/url"
 	"time"
 )
@@ -29,56 +32,56 @@ type Config struct {
 	FormValues map[string]string
 }
 
-//New registers a new reverseproxy handler for each provided config with the specified path prefix
-func New(configs ...*Config) *GoProxy {
+//NewGoProxy registers a new reverseproxy handler for each provided config with the specified path prefix
+func NewGoProxy(configs ...*Config) *GoProxy {
 	if len(configs) == 0 {
 		util.Entry().Warnln("zero configs passed in creation of GoProxy")
 	}
-	proxy := &GoProxy{
-		Router:  mux.NewRouter(),
-		proxies: make(map[string]*httputil.ReverseProxy),
-	}
+	r := mux.NewRouter()
+	proxies := make(map[string]*httputil.ReverseProxy)
 	for _, v := range configs {
 		if err := util.Validate(v); err != nil {
 			util.Entry().Fatalln(err.Error())
 		}
-		proxy.proxies[v.PathPrefix] = &httputil.ReverseProxy{
-			Director: proxy.directorFunc(v),
+		proxies[v.PathPrefix] = &httputil.ReverseProxy{
+			Director: directorFunc(v),
 		}
 	}
-	for path, prox := range proxy.proxies {
-		proxy.Handle(path, prox)
+	for path, prox := range proxies {
+		r.Handle(path, prox)
 	}
-	return proxy
+	return &GoProxy{
+		Router:  r,
+		proxies: proxies,
+	}
 }
 
-//NewSecure registers a new secure reverseproxy for each provided configs. It is the same as New, except with CORS options and a
+//NewSecureGoProxy registers a new secure reverseproxy for each provided configs. It is the same as New, except with CORS options and a
 // JWT middleware that checks for a signed bearer token
-func NewSecure(secret string, opts cors.Options, configs ...*Config) *GoProxy {
+func NewSecureGoProxy(secret string, opts cors.Options, configs ...*Config) *GoProxy {
 	if len(configs) == 0 {
 		util.Entry().Warnln("zero configs passed in creation of GoProxy")
 	}
-	proxy := &GoProxy{
-		Router:  mux.NewRouter(),
-		proxies: make(map[string]*httputil.ReverseProxy),
-	}
+	r := mux.NewRouter()
+	proxies := make(map[string]*httputil.ReverseProxy)
 	for _, v := range configs {
 		if err := util.Validate(v); err != nil {
 			util.Entry().Fatalln(err.Error())
 		}
-		proxy.proxies[v.PathPrefix] = &httputil.ReverseProxy{
-			Director: proxy.directorFunc(v),
+		proxies[v.PathPrefix] = &httputil.ReverseProxy{
+			Director: directorFunc(v),
 		}
 	}
-	for path, prox := range proxy.proxies {
-		proxy.Handle(path, prox)
+	for path, prox := range proxies {
+		r.Handle(path, prox)
 	}
-	proxy.Router = middleware.WithJWT(secret)(proxy.Router)
-	proxy.Router = middleware.WithCORS(opts)(proxy.Router)
-	return proxy
+	return &GoProxy{
+		Router:  r,
+		proxies: proxies,
+	}
 }
 
-func (g *GoProxy) directorFunc(config *Config) func(req *http.Request) {
+func directorFunc(config *Config) func(req *http.Request) {
 	target, err := url.Parse(config.TargetUrl)
 	if err != nil {
 		util.Entry().Fatalln(err.Error())
@@ -127,34 +130,34 @@ func (g *GoProxy) directorFunc(config *Config) func(req *http.Request) {
 }
 
 //ModifyResponses takes a Response Middleware function, traverses each registered reverse proxy, and modifies the http response it sends to the client
-func (g *GoProxy) ModifyResponses(middleware middleware.ResponseWare) {
+func (g *GoProxy) ResponseWare(middleware middleware.ResponseWare) {
 	for _, prox := range g.proxies {
 		prox.ModifyResponse = middleware(prox.ModifyResponse)
 	}
 }
 
 //ModifyResponses takes a Request Middleware function, traverses each registered reverse proxy, and modifies the http request it sends to its target prior to sending
-func (g *GoProxy) ModifyRequests(middleware middleware.RequestWare) {
+func (g *GoProxy) RequestWare(middleware middleware.RequestWare) {
 	for _, prox := range g.proxies {
 		prox.Director = middleware(prox.Director)
 	}
 }
 
 //ModifyResponses takes a Transport Middleware function, traverses each registered reverse proxy, and modifies the http roundtripper it uses
-func (g *GoProxy) ModifyTransport(middleware middleware.TransportWare) {
+func (g *GoProxy) TransportWare(middleware middleware.TransportWare) {
 	for _, prox := range g.proxies {
 		prox.Transport = middleware(prox.Transport)
 	}
 }
 
-//ModifyRouter takes a router middleware function and wraps the proxies router
-func (g *GoProxy) ModifyRouter(middleware middleware.RouterWare) {
-	g.Router = middleware(g.Router)
+//Middleware wraps Goproxy with the provided middlewares
+func (g *GoProxy) Middleware(middlewares ...mux.MiddlewareFunc) {
+	g.Router.Use(middlewares...)
 }
 
-//WalkPaths walks registered mux paths and modifies them
-func (g *GoProxy) WalkPaths(fns ...mux.WalkFunc) error {
-	for _, v := range fns {
+//WalkPaths walks registered mux paths
+func (g *GoProxy) WalkPaths(walkfuncs ...mux.WalkFunc) error {
+	for _, v := range walkfuncs {
 		if err := g.Router.Walk(v); err != nil {
 			return err
 		}
@@ -182,4 +185,70 @@ func (g *GoProxy) AsHandlerFunc() http.HandlerFunc {
 //ListenAndServe starts the GoProxy server on the specified address
 func (g *GoProxy) ListenAndServe(addr string) error {
 	return http.ListenAndServe(addr, g)
+}
+
+//Registers prometheus metrics for: in_flight_requests, requests_total, request_duration_seconds, response_size_bytes,
+func (g *GoProxy) WithMetrics() {
+	var (
+		inFlightGauge = prometheus.NewGauge(prometheus.GaugeOpts{
+			Name: "in_flight_requests",
+			Help: "A gauge of requests currently being served by the wrapped handler.",
+		})
+
+		counter = prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Name: "requests_total",
+				Help: "A counter for requests to the wrapped handler.",
+			},
+			[]string{"code", "method"},
+		)
+
+		// duration is partitioned by the HTTP method and handler. It uses custom
+		// buckets based on the expected request duration.
+		duration = prometheus.NewHistogramVec(
+			prometheus.HistogramOpts{
+				Name:    "request_duration_seconds",
+				Help:    "A histogram of latencies for requests.",
+				Buckets: []float64{.005, .005, .1, .25, .5, 1},
+			},
+			[]string{"handler", "method"},
+		)
+
+		// responseSize has no labels, making it a zero-dimensional
+		// ObserverVec.
+		responseSize = prometheus.NewHistogramVec(
+			prometheus.HistogramOpts{
+				Name:    "response_size_bytes",
+				Help:    "A histogram of response sizes for requests.",
+				Buckets: []float64{200, 500, 900, 1500},
+			},
+			[]string{},
+		)
+	)
+
+	// Register all of the metrics in the standard registry.
+	prometheus.MustRegister(inFlightGauge, counter, duration, responseSize)
+	var chain http.Handler
+	_ = g.Walk(func(route *mux.Route, router *mux.Router, ancestors []*mux.Route) error {
+		pth, _ := route.GetPathTemplate()
+		chain = promhttp.InstrumentHandlerInFlight(inFlightGauge,
+			promhttp.InstrumentHandlerDuration(duration.MustCurryWith(prometheus.Labels{"handler": pth}),
+				promhttp.InstrumentHandlerCounter(counter,
+					promhttp.InstrumentHandlerResponseSize(responseSize, route.GetHandler()),
+				),
+			),
+		)
+		route = route.Handler(chain)
+		return nil
+	})
+	g.Handle("/metrics", promhttp.HandlerFor(prometheus.DefaultGatherer, promhttp.HandlerOpts{}))
+}
+
+//registers all pprof handlers: /debug/pprof/, /debug/pprof/cmdline, /debug/pprof/profile, /debug/pprof/symbol, /debug/pprof/trace
+func (g *GoProxy) WithPprof() {
+	g.Handle("/debug/pprof/", http.HandlerFunc(pprof.Index))
+	g.Handle("/debug/pprof/cmdline", http.HandlerFunc(pprof.Cmdline))
+	g.Handle("/debug/pprof/profile", http.HandlerFunc(pprof.Profile))
+	g.Handle("/debug/pprof/symbol", http.HandlerFunc(pprof.Symbol))
+	g.Handle("/debug/pprof/trace", http.HandlerFunc(pprof.Trace))
 }
