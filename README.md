@@ -33,18 +33,19 @@ GoProxy is an API Gateway/Reverse Proxy and http.ServeMux/http.Handler
 #### func  New
 
 ```go
-func New(config *ProxyConfig) *GoProxy
+func New(configs ...*Config) *GoProxy
 ```
-New registers a new reverseproxy for each provided ProxyConfig
+New registers a new reverseproxy handler for each provided config with the
+specified path prefix
 
 #### func  NewSecure
 
 ```go
-func NewSecure(secret string, opts cors.Options, config *ProxyConfig) *GoProxy
+func NewSecure(secret string, opts cors.Options, configs ...*Config) *GoProxy
 ```
-NewSecure registers a new secure reverseproxy for each provided ProxyConfig. It
-is the same as New, except with CORS options and a JWT middleware that checks
-for a signed bearer token
+NewSecure registers a new secure reverseproxy for each provided configs. It is
+the same as New, except with CORS options and a JWT middleware that checks for a
+signed bearer token
 
 #### func (*GoProxy) AsHandlerFunc
 
@@ -65,6 +66,7 @@ GetProxy returns the reverse proxy with the registered prefix
 ```go
 func (g *GoProxy) ListenAndServe(addr string) error
 ```
+ListenAndServe starts the GoProxy server on the specified address
 
 #### func (*GoProxy) ModifyRequests
 
@@ -111,13 +113,3 @@ Proxies returns all registered reverse proxies as a map of prefix:reverse proxy
 func (g *GoProxy) WalkPaths(fns ...mux.WalkFunc) error
 ```
 WalkPaths walks registered mux paths and modifies them
-
-#### type ProxyConfig
-
-```go
-type ProxyConfig struct {
-	Configs []*Config `validate:"required"`
-}
-```
-
-ProxyConfig configures the entire reverse proxy

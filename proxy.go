@@ -29,7 +29,7 @@ type Config struct {
 	FormValues map[string]string
 }
 
-//New registers a new reverseproxy for each provided config
+//New registers a new reverseproxy handler for each provided config with the specified path prefix
 func New(configs ...*Config) *GoProxy {
 	if len(configs) == 0 {
 		util.Entry().Warnln("zero configs passed in creation of GoProxy")
