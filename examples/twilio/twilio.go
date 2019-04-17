@@ -10,7 +10,7 @@ var acc = os.Getenv("TWILIO_ACCOUNT")
 var BaseURL = "https://api.twilio.com/2010-04-01" + "/Accounts/" + acc
 
 func TwilioHandler(w http.ResponseWriter, r *http.Request) {
-	goproxy.New(&goproxy.Config{
+	goproxy.NewGoProxy(&goproxy.Config{
 		PathPrefix: "/Calls.json",
 		TargetUrl:  BaseURL,
 		Username:   acc,
