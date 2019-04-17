@@ -49,7 +49,9 @@ var BaseURL = "https://api.stripe.com/v1/customers"
 var proxy = goproxy.NewGoProxy(&config.Config{
 	TargetUrl:           BaseURL,
 	Username:            os.Getenv("ACCOUNT"),
+	//
 	Password:            os.Getenv("KEY"),
+	// Callback url to handle response from the Stripe customers rest API
 	ResponseCallbackURL: os.Getenv("CALLBACK"),
 })
 

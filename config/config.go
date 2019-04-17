@@ -11,8 +11,7 @@ import (
 //Config is used to configure a reverse proxy handler(one route)
 type Config struct {
 	TargetUrl           string `validate:"required"`
-	Username            string
-	Password            string
+	Client_Secret       string
 	Headers             map[string]string
 	FormValues          map[string]string
 	FlushInterval       time.Duration
@@ -30,9 +29,6 @@ func (c *Config) DirectorFunc() func(req *http.Request) {
 		req.URL.Scheme = target.Scheme
 		req.URL.Host = target.Host
 		req.URL.Path = target.Path
-		if c.Username != "" || c.Password != "" {
-			req.SetBasicAuth(c.Username, c.Password)
-		}
 		if c.Headers != nil {
 			for k, v := range c.Headers {
 				req.Header.Set(k, v)
