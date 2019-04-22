@@ -9,12 +9,11 @@
 
 ```go
 type Config struct {
-	TargetUrl           string `validate:"required"`
-	Secret              string `validate:"required"`
-	Headers             map[string]string
-	FormValues          map[string]string
-	FlushInterval       time.Duration
-	ResponseCallbackURL string
+	TargetUrl     string `validate:"required"`
+	Headers       map[string]string
+	FormValues    map[string]string
+	FlushInterval time.Duration
+	WebHookURL    string
 }
 ```
 
@@ -38,8 +37,8 @@ func (c *Config) Entry() *logrus.Entry
 func (c *Config) JSONString() string
 ```
 
-#### func (*Config) ResponseCallback
+#### func (*Config) WebHook
 
 ```go
-func (c *Config) ResponseCallback() func(r *http.Response) error
+func (c *Config) WebHook() func(r *http.Response) error
 ```

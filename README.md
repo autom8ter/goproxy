@@ -2,22 +2,7 @@
 --
     import "github.com/autom8ter/goproxy"
 
-## Example
 
-```go
-
-var BaseURL = "https://api.stripe.com/v1/customers"
-
-var proxy = goproxy.NewGoProxy(&config.Config{
-	TargetUrl:           BaseURL,
-	Secret:              os.Getenv("SECRET"),//used for signing json web tokens
-})
-
-func main() {
-	proxy.ListenAndServe(":8080")
-}
-
-```
 ## Usage
 
 #### type GoProxy
@@ -37,12 +22,6 @@ func NewGoProxy(config *config.Config) *GoProxy
 ```
 NewGoProxy registers a new reverseproxy handler for each provided config with
 the specified path prefix
-
-#### func (*GoProxy) ListenAndServe
-
-```go
-func (g *GoProxy) ListenAndServe(addr string)
-```
 
 #### func (*GoProxy) ServeHTTP
 

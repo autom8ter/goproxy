@@ -56,19 +56,19 @@ type ReverseProxy struct {
 	// copying HTTP response bodies.
 	BufferPool BufferPool
 
-	// ResponseCallback is an optional function that modifies the
+	// ResponseHook is an optional function that modifies the
 	// Response from the backend. It is called if the backend
 	// returns a response at all, with any HTTP status code.
 	// If the backend is unreachable, the optional ErrorHandler is
-	// called without any call to ResponseCallback.
+	// called without any call to ResponseHook.
 	//
-	// If ResponseCallback returns an error, ErrorHandler is called
+	// If ResponseHook returns an error, ErrorHandler is called
 	// with its error value. If ErrorHandler is nil, its default
 	// implementation is used.
-	ResponseCallback func(*http.Response) error
+	ResponseHook func(*http.Response) error
 
 	// ErrorHandler is an optional function that handles errors
-	// reaching the backend or errors from ResponseCallback.
+	// reaching the backend or errors from ResponseHook.
 	//
 	// If nil, the default is to log the provided error and return
 	// a 502 Status Bad Gateway response.

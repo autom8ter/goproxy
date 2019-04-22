@@ -1,9 +1,9 @@
 package goproxy
 
 import (
+	"github.com/autom8ter/api/go/api"
 	"github.com/autom8ter/goproxy/config"
 	"github.com/autom8ter/goproxy/httputil"
-	"github.com/autom8ter/goproxy/util"
 	"net/http"
 )
 
@@ -19,8 +19,8 @@ func (g *GoProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 //NewGoProxy registers a new reverseproxy handler for each provided config with the specified path prefix
 func NewGoProxy(config *config.Config) *GoProxy {
-	if err := util.Handle.Validate(config); err != nil {
-		util.Handle.Entry().Fatalln(err.Error())
+	if err := api.Util.Validate(config); err != nil {
+		api.Util.Entry().Fatalln(err.Error())
 	}
 
 	return &GoProxy{

@@ -1,7 +1,7 @@
 package config
 
 import (
-	"github.com/autom8ter/goproxy/util"
+	"github.com/autom8ter/api/go/api"
 	"github.com/sirupsen/logrus"
 	"net/http"
 	"net/url"
@@ -20,7 +20,7 @@ type Config struct {
 func (c *Config) DirectorFunc() func(req *http.Request) {
 	target, err := url.Parse(c.TargetUrl)
 	if err != nil {
-		util.Handle.Entry().Fatalln(err.Error())
+		api.Util.Entry().Fatalln(err.Error())
 	}
 	targetQuery := target.RawQuery
 	return func(req *http.Request) {
@@ -44,8 +44,8 @@ func (c *Config) DirectorFunc() func(req *http.Request) {
 			req.URL.RawQuery = targetQuery + "&" + req.URL.RawQuery
 		}
 
-		util.Handle.Entry().Debugf("proxied request: %s\n", util.Handle.MarshalJSON(&requestLog{
-			Received:  util.Handle.HumanizeTime(start),
+		api.Util.Entry().Debugf("proxied request: %s\n", api.Util.MarshalJSON(&requestLog{
+			Received:  api.Util.HumanizeTime(start),
 			Method:    req.Method,
 			URL:       req.URL.String(),
 			UserAgent: req.UserAgent(),
@@ -58,7 +58,7 @@ func (c *Config) DirectorFunc() func(req *http.Request) {
 }
 
 func (c *Config) JSONString() string {
-	return string(util.Handle.MarshalJSON(c))
+	return string(api.Util.MarshalJSON(c))
 }
 
 func (c *Config) WebHook() func(r *http.Response) error {
@@ -68,7 +68,7 @@ func (c *Config) WebHook() func(r *http.Response) error {
 	return func(r *http.Response) error {
 		u, err := url.Parse(c.WebHookURL)
 		if err != nil {
-			util.Handle.Entry().Fatalln("failed to parse response callback url", err.Error())
+			api.Util.Entry().Fatalln("failed to parse response callback url", err.Error())
 		}
 
 		resp, err := http.DefaultClient.Do(&http.Request{
@@ -88,7 +88,7 @@ func (c *Config) WebHook() func(r *http.Response) error {
 }
 
 func (c *Config) Entry() *logrus.Entry {
-	return util.Handle.Entry()
+	return api.Util.Entry()
 }
 
 type requestLog struct {

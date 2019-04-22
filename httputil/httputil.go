@@ -134,7 +134,7 @@ var hopHeaders = []string{
 }
 
 func (p *ReverseProxy) defaultErrorHandler(rw http.ResponseWriter, req *http.Request, err error) {
-	p.logf("GoProxy ❌ | %v", err)
+	p.logf("❌ | %v", err)
 	rw.WriteHeader(http.StatusBadGateway)
 }
 
@@ -391,7 +391,7 @@ func (p *ReverseProxy) copyBuffer(dst io.Writer, src io.Reader, buf []byte) (int
 	for {
 		nr, rerr := src.Read(buf)
 		if rerr != nil && rerr != io.EOF && rerr != context.Canceled {
-			p.logf("GoProxy ❌ | read error during body copy: %v", rerr)
+			p.logf("❌ | read error during body copy: %v", rerr)
 		}
 		if nr > 0 {
 			nw, werr := dst.Write(buf[:nr])
