@@ -8,6 +8,8 @@ github.com/auth0/go-jwt-middleware v0.0.0-20170425171159-5493cabe49f7 h1:irR1cO6
 github.com/auth0/go-jwt-middleware v0.0.0-20170425171159-5493cabe49f7/go.mod h1:LWMyo4iOLWXHGdBki7NIht1kHru/0wM179h+d3g8ATM=
 github.com/autom8ter/objectify v0.0.0-20190416235606-534b2554f5fe h1:ACIuNoSbc2oYdcyTHkMepxtJ2ntnwmygFjD+3Ty6HEY=
 github.com/autom8ter/objectify v0.0.0-20190416235606-534b2554f5fe/go.mod h1:Hg+n5d+Qj3M0I+vnIo+009AoX2qzOtQJ20UVHYnjF3Q=
+github.com/autom8ter/objectify v0.0.0-20190422193702-3644923e4f46 h1:zvQFrbj9TYxw1rDSB2s2YM5LANR6Ggx6oawljn4QJ9c=
+github.com/autom8ter/objectify v0.0.0-20190422193702-3644923e4f46/go.mod h1:Hg+n5d+Qj3M0I+vnIo+009AoX2qzOtQJ20UVHYnjF3Q=
 github.com/codegangsta/negroni v1.0.0 h1:+aYywywx4bnKXWvoWtRfJ91vC59NbEhEY03sZjQhbVY=
 github.com/codegangsta/negroni v1.0.0/go.mod h1:v0y3T5G7Y1UlFfyxFn/QLRU4a2EuNau2iZY63YTKWo0=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
