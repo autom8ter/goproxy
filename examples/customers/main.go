@@ -9,9 +9,9 @@ import (
 var BaseURL = "https://api.stripe.com/v1/customers"
 
 var proxy = goproxy.NewGoProxy(&config.Config{
-	TargetUrl:           BaseURL,
-	Secret:              os.Getenv("SECRET"),
-	ResponseCallbackURL: os.Getenv("CALLBACK"),
+	TargetUrl:  BaseURL,
+	Secret:     os.Getenv("SECRET"),
+	WebHookURL: os.Getenv("WEBHOOK"),
 })
 
 func main() {

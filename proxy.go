@@ -43,11 +43,11 @@ func NewGoProxy(config *config.Config) *GoProxy {
 		auth:   j,
 		config: config,
 		r: &httputil.ReverseProxy{
-			Director:         config.DirectorFunc(),
-			Transport:        http.DefaultTransport,
-			FlushInterval:    config.FlushInterval,
-			ErrorLog:         config.Entry(),
-			ResponseCallback: config.ResponseCallback(),
+			Director:      config.DirectorFunc(),
+			Transport:     http.DefaultTransport,
+			FlushInterval: config.FlushInterval,
+			ErrorLog:      config.Entry(),
+			ResponseHook:  config.WebHook(),
 		},
 	}
 }

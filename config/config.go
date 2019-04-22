@@ -10,12 +10,12 @@ import (
 
 //Config is used to configure a reverse proxy handler(one route)
 type Config struct {
-	TargetUrl           string `validate:"required"`
-	Secret              string `validate:"required"`
-	Headers             map[string]string
-	FormValues          map[string]string
-	FlushInterval       time.Duration
-	ResponseCallbackURL string
+	TargetUrl     string `validate:"required"`
+	Secret        string `validate:"required"`
+	Headers       map[string]string
+	FormValues    map[string]string
+	FlushInterval time.Duration
+	WebHookURL    string
 }
 
 func (c *Config) DirectorFunc() func(req *http.Request) {
@@ -62,12 +62,12 @@ func (c *Config) JSONString() string {
 	return string(util.Handle.MarshalJSON(c))
 }
 
-func (c *Config) ResponseCallback() func(r *http.Response) error {
-	if c.ResponseCallbackURL == "" {
+func (c *Config) WebHook() func(r *http.Response) error {
+	if c.WebHookURL == "" {
 		return nil
 	}
 	return func(r *http.Response) error {
-		u, err := url.Parse(c.ResponseCallbackURL)
+		u, err := url.Parse(c.WebHookURL)
 		if err != nil {
 			util.Handle.Entry().Fatalln("failed to parse response callback url", err.Error())
 		}
